@@ -2,8 +2,8 @@ import { auth, db } from "@/src/services/firebase";
 import { setRole, setUser } from "@/src/store/slices/authSlice";
 import { useRouter } from "expo-router";
 import { FirebaseError } from "firebase/app";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
@@ -17,7 +17,8 @@ import {
 } from "react-native";
 import { useDispatch } from "react-redux";
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -27,65 +28,67 @@ export default function LoginScreen() {
   const dispatch = useDispatch();
   const router = useRouter();
 
-  const handleLogin = async () => {
+  const handleRegister = async () => {
     // Limpa erros antigos ao tentar de novo
     setErrorMessage("");
 
-    if (!email || !password) {
+    if (!name || !email || !password) {
       setErrorMessage("Por favor, preencha todos os campos!");
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMessage("A senha deve conter pelo menos 6 caracteres!");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // 1. Faz o login no Firebase Auth
-      const userCredential = await signInWithEmailAndPassword(
+      // 1. Cria o usuário no Firease Auth
+      const userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
         password,
       );
       const user = userCredential.user;
 
-      // 2. Busca o papel (role) do usuário do Firestore
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      let userRole: "student" | "teacher" | "admin" | null = null;
-
-      if (userDoc.exists()) {
-        userRole = userDoc.data().role;
-      }
+      // 2. Salva os dados extras no Firestore (com papel padrão de 'student')
+      const defaultRole = "student";
+      await setDoc(doc(db, "users", user.uid), {
+        name: name,
+        email: user.email,
+        role: defaultRole,
+        createdAt: new Date(),
+      });
 
       // 3. Salva os dados no Redux
       dispatch(setUser({ uid: user.uid, email: user.email }));
-      dispatch(setRole(userRole));
+      dispatch(setRole(defaultRole));
 
       // 4. Redireciona para a área logada (Home)
-      router.replace("/(tabs)");
+      router.replace("/(app)/(tabs)");
     } catch (error: unknown) {
-      // Aqui nós verificamos se o erro unknown é, de fato, um erro do Firebase
+      // Cole esta linha aqui para vermos o erro real no terminal do VS Code:
+      console.log("🔥 ERRO REAL NO CADASTRO:", error);
       if (error instanceof FirebaseError) {
-        // Podemos mapear os códigos de Firebase para mensagens em Português
         switch (error.code) {
-          case "auth/invalid-credential":
-            setErrorMessage("E-mail ou senha incorretos.");
+          case "auth/email-already-in-use":
+            setErrorMessage("Este e-mail já está em uso.");
             break;
           case "auth/invalid-email":
-            setErrorMessage("O formato de email é inválido.");
+            setErrorMessage("O formato de e-mail é inválido.");
             break;
-          case "auth/too-many-requests":
-            setErrorMessage(
-              "Muitas tentativas de falhas. Tente novamente mais tarde.",
-            );
+          case "auth/weak-password":
+            setErrorMessage("A senha é muito fraca.");
             break;
           default:
-            setErrorMessage("Erro ao fazer o Login. Tente Novamente.");
+            setErrorMessage("Erro ao criar conta. Tente Novamente.");
         }
       } else {
-        // Se for um erro genérico (ex: sem internet)
-        setErrorMessage("Ocorreu um erro inesperado.");
+        setErrorMessage("Ocorreu um erro inesperado. Tente Novamente.");
       }
     } finally {
-      // Independetemente de dar certo ou errado, paramos o loading
       setIsLoading(false);
     }
   };
@@ -97,7 +100,15 @@ export default function LoginScreen() {
       }}
     >
       <View style={styles.container}>
-        <Text style={styles.title}>Blogging Escola</Text>
+        <Text style={styles.title}>Criar Conta</Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="Nome Completo"
+          value={name}
+          onChangeText={setName}
+          editable={!isLoading}
+        />
 
         <TextInput
           style={styles.input}
@@ -105,41 +116,36 @@ export default function LoginScreen() {
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
-          keyboardType="email-address"
           editable={!isLoading}
+          keyboardType="email-address"
         />
-
         <TextInput
           style={styles.input}
           placeholder="Senha"
           value={password}
           onChangeText={setPassword}
-          secureTextEntry
           editable={!isLoading}
+          secureTextEntry
         />
 
-        {/* Renderização condicional do erro: só aparece se houver texto  */}
         {errorMessage ? (
           <Text style={styles.errorText}>{errorMessage}</Text>
         ) : null}
 
         <TouchableOpacity
           style={[styles.button, isLoading && styles.buttonDisabled]}
-          onPress={handleLogin}
+          onPress={handleRegister}
           disabled={isLoading}
         >
           {isLoading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Entrar</Text>
+            <Text style={styles.buttonText}>Cadastrar</Text>
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => router.push("./(auth)/register")}
-          disabled={isLoading}
-        >
-          <Text style={styles.link}>Não tem conta? Cadastre-se aqui</Text>
+        <TouchableOpacity onPress={() => router.back()} disabled={isLoading}>
+          <Text style={styles.link}>Já tem conta? Faça login aqui</Text>
         </TouchableOpacity>
       </View>
     </TouchableWithoutFeedback>
@@ -151,12 +157,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     padding: 20,
-    backgroundColor: "#f5f5f5",
   },
   title: {
     fontSize: 28,
-    fontWeight: "bold",
     textAlign: "center",
+    fontWeight: "bold",
     marginBottom: 40,
     color: "#333",
   },
@@ -175,25 +180,26 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   button: {
-    backgroundColor: "#007bff",
+    backgroundColor: "#28A745",
     padding: 15,
     borderRadius: 8,
     alignItems: "center",
+    justifyContent: "center",
     marginTop: 10,
   },
   buttonDisabled: {
-    backgroundColor: "#80bdff",
+    backgroundColor: "#94d3a2",
   },
   buttonText: {
     color: "#fff",
-    fontWeight: "600",
+    fontWeight: "bold",
     fontSize: 16,
   },
   link: {
     textAlign: "center",
     color: "#007bff",
     marginTop: 20,
-    fontWeight: "600",
     fontSize: 16,
+    fontWeight: "600",
   },
 });

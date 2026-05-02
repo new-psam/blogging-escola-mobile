@@ -1,6 +1,8 @@
 // src/ services/firebase.ts
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+// @ts-ignore - Ignora o erro do TypeScript, pois a função existe no runtime do React Native
+import { getReactNativePersistence, initializeAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // As chaves de configuração do seu projeto Firebase
@@ -17,5 +19,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Instancia e exporta os serviços que vamos usar no restante do app
-export const auth = getAuth(app);
+// Inicializamos a autenticação já com a persistência de dados configurada
+export const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage),
+});
 export const db = getFirestore(app);
