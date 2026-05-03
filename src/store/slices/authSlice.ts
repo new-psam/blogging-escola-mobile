@@ -2,7 +2,11 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 // 1. Define o formato dos dados de usuário e permissão
 interface AuthState {
-  user: { uid: string; email: string | null } | null;
+  user: {
+    uid: string;
+    email: string | null;
+    name?: string | null; // opcional, caso queira salvar o nome do usuário no futuro
+  } | null;
   role: "admin" | "teacher" | "student" | null;
   isLoading: boolean; //útil para mostrar um loading enquanto o app abre e verifica o firebase
 }
@@ -22,7 +26,11 @@ const authSlice = createSlice({
     // Ação para salvar os dados básicos do Firebase (ID e Email)
     setUser: (
       state,
-      action: PayloadAction<{ uid: string; email: string | null } | null>,
+      action: PayloadAction<{
+        uid: string;
+        email: string | null;
+        name?: string | null;
+      } | null>,
     ) => {
       state.user = action.payload;
     },

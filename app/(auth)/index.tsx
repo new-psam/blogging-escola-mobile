@@ -6,14 +6,14 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Keyboard,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  ActivityIndicator,
+  Keyboard,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import { useDispatch } from "react-redux";
 
@@ -50,17 +50,20 @@ export default function LoginScreen() {
       // 2. Busca o papel (role) do usuário do Firestore
       const userDoc = await getDoc(doc(db, "users", user.uid));
       let userRole: "student" | "teacher" | "admin" | null = null;
+      let userName: string | null = null;
 
       if (userDoc.exists()) {
-        userRole = userDoc.data().role;
+        const data = userDoc.data();
+        userRole = data.role;
+        userName = data.name;
       }
 
       // 3. Salva os dados no Redux
-      dispatch(setUser({ uid: user.uid, email: user.email }));
+      dispatch(setUser({ uid: user.uid, email: user.email, name: userName }));
       dispatch(setRole(userRole));
 
       // 4. Redireciona para a área logada (Home)
-      router.replace("/(tabs)");
+      router.replace("/(app)/(tabs)");
     } catch (error: unknown) {
       // Aqui nós verificamos se o erro unknown é, de fato, um erro do Firebase
       if (error instanceof FirebaseError) {

@@ -6,14 +6,14 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    Keyboard,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  ActivityIndicator,
+  Keyboard,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 import { useDispatch } from "react-redux";
 
@@ -63,7 +63,7 @@ export default function RegisterScreen() {
       });
 
       // 3. Salva os dados no Redux
-      dispatch(setUser({ uid: user.uid, email: user.email }));
+      dispatch(setUser({ uid: user.uid, email: user.email, name: name }));
       dispatch(setRole(defaultRole));
 
       // 4. Redireciona para a área logada (Home)
