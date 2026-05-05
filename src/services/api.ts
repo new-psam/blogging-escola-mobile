@@ -17,10 +17,23 @@ import { auth } from "./firebase";
 
 api.interceptors.request.use(
   async (config) => {
+    // BLINDAGEM: Se o Firebase estiver "acordando", esperamos ele confirmar o estado do usuário
+    await new Promise((resolve) => {
+      const unsubscribe = auth.onAuthStateChanged(() => {
+        unsubscribe();
+        resolve(user);
+      });
+    });
+
     const user = auth.currentUser;
+
     if (user) {
       const token = await user.getIdToken();
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      console.warn(
+        "⚠️ Interceptor: Requisição disparada sem usuário logado no Firebase.",
+      );
     }
     return config;
   },
