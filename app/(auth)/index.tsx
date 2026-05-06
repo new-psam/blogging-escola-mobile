@@ -1,12 +1,12 @@
-import { auth, db } from "@/src/services/firebase";
-import { setRole, setUser } from "@/src/store/slices/authSlice";
 import { useRouter } from "expo-router";
-import { FirebaseError } from "firebase/app";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+
+import { api } from "@/src/services/api";
+import { loginSuccess } from "@/src/store/slices/authSlice";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Keyboard,
   StyleSheet,
   Text,
@@ -20,73 +20,40 @@ import { useDispatch } from "react-redux";
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
-  const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const dispatch = useDispatch();
   const router = useRouter();
+  const dispatch = useDispatch();
 
   const handleLogin = async () => {
-    // Limpa erros antigos ao tentar de novo
-    setErrorMessage("");
-
     if (!email || !password) {
-      setErrorMessage("Por favor, preencha todos os campos!");
+      Alert.alert("Erro", "Por favor, preencha todos os campos.");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // 1. Faz o login no Firebase Auth
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password,
-      );
-      const user = userCredential.user;
+      //1. Bate no seu AuthController.js do Node
+      const response = await api.post("/auth/login", {
+        email: email.toLowerCase().trim(),
+        senha: password,
+      });
 
-      // 2. Busca o papel (role) do usuário do Firestore
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      let userRole: "student" | "teacher" | "admin" | null = null;
-      let userName: string | null = null;
+      // 2. Extrai os dados que o seu Node.js retornou (usuário e token JWT)
+      const { user, token } = response.data;
 
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        userRole = data.role;
-        userName = data.name;
-      }
+      // 3. Salva o Token fisicamente no celular ( para o Interceptador usar)
+      await AsyncStorage.setItem("@app_token", token);
 
-      // 3. Salva os dados no Redux
-      dispatch(setUser({ uid: user.uid, email: user.email, name: userName }));
-      dispatch(setRole(userRole));
+      // 4. Atualiza o estado global do Redux com os dados do usuário e token
+      dispatch(loginSuccess({ user, token }));
 
-      // 4. Redireciona para a área logada (Home)
+      // 5. Redireciona para a tela principal do app
       router.replace("/(app)/(tabs)");
-    } catch (error: unknown) {
-      // Aqui nós verificamos se o erro unknown é, de fato, um erro do Firebase
-      if (error instanceof FirebaseError) {
-        // Podemos mapear os códigos de Firebase para mensagens em Português
-        switch (error.code) {
-          case "auth/invalid-credential":
-            setErrorMessage("E-mail ou senha incorretos.");
-            break;
-          case "auth/invalid-email":
-            setErrorMessage("O formato de email é inválido.");
-            break;
-          case "auth/too-many-requests":
-            setErrorMessage(
-              "Muitas tentativas de falhas. Tente novamente mais tarde.",
-            );
-            break;
-          default:
-            setErrorMessage("Erro ao fazer o Login. Tente Novamente.");
-        }
-      } else {
-        // Se for um erro genérico (ex: sem internet)
-        setErrorMessage("Ocorreu um erro inesperado.");
-      }
+    } catch (error: any) {
+      console.error("Erro ao fazer login:", error);
+      Alert.alert("Erro", "E-mail ou senha inválidos. Tente novamente.");
     } finally {
       // Independetemente de dar certo ou errado, paramos o loading
       setIsLoading(false);
@@ -101,10 +68,12 @@ export default function LoginScreen() {
     >
       <View style={styles.container}>
         <Text style={styles.title}>Blogging Escola</Text>
+        <Text style={styles.subtitle}>Faça login para continuar</Text>
 
         <TextInput
           style={styles.input}
           placeholder="E-mail"
+          placeholderTextColor="#666"
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -115,16 +84,12 @@ export default function LoginScreen() {
         <TextInput
           style={styles.input}
           placeholder="Senha"
+          placeholderTextColor="#666"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           editable={!isLoading}
         />
-
-        {/* Renderização condicional do erro: só aparece se houver texto  */}
-        {errorMessage ? (
-          <Text style={styles.errorText}>{errorMessage}</Text>
-        ) : null}
 
         <TouchableOpacity
           style={[styles.button, isLoading && styles.buttonDisabled]}
@@ -139,10 +104,11 @@ export default function LoginScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
+          style={styles.linkButton}
           onPress={() => router.push("./(auth)/register")}
           disabled={isLoading}
         >
-          <Text style={styles.link}>Não tem conta? Cadastre-se aqui</Text>
+          <Text style={styles.linkText}>Não tem conta? Cadastre-se aqui</Text>
         </TouchableOpacity>
       </View>
     </TouchableWithoutFeedback>
@@ -163,6 +129,12 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     color: "#333",
   },
+  subtitle: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 32,
+    textAlign: "center",
+  },
   input: {
     backgroundColor: "#fff",
     padding: 15,
@@ -170,12 +142,6 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderWidth: 1,
     borderColor: "#ddd",
-  },
-  errorText: {
-    color: "#d32f2f",
-    marginBottom: 15,
-    textAlign: "center",
-    fontWeight: "600",
   },
   button: {
     backgroundColor: "#007bff",
@@ -196,6 +162,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#007bff",
     marginTop: 20,
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  linkButton: {
+    marginTop: 20,
+    alignItems: "center",
+  },
+  linkText: {
+    color: "#007bff",
     fontWeight: "600",
     fontSize: 16,
   },

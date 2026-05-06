@@ -1,47 +1,44 @@
-import { auth } from "@/src/services/firebase";
 import { RootState } from "@/src/store";
-import { logoutApp } from "@/src/store/slices/authSlice";
-import { signOut } from "firebase/auth";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { logout } from "@/src/store/slices/authSlice";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React from "react";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 
 export default function ProfileScreen() {
-  const dispatch = useDispatch();
-  // Pegamos os dados do usuário para mostar na tela, ou para editar
   const user = useSelector((state: RootState) => state.auth.user);
-  const role = useSelector((state: RootState) => state.auth.role);
+  const dispatch = useDispatch();
+  const router = useRouter();
 
   const handleLogout = async () => {
     try {
-      // 1. Avisa o Firebase para encerrar a sessão no celular
-      await signOut(auth);
-      // 2. Limpa os dados do usuário no Redux (opcional, pois o listener do Firebase já cuida disso)
-      dispatch(logoutApp());
+      // 1. Limpa o token do armazenamento assíncrono
+      await AsyncStorage.removeItem("@app_token");
+      // 2. Atualiza o estado global do Redux para deslogado
+      dispatch(logout());
+      router.replace("/(auth)"); // Redireciona para a tela de login
     } catch (error) {
-      console.error("Erro ao fazer logout:", error);
+      Alert.alert("Erro", "Não foi possível sair do aplicativo!");
     }
   };
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Meu Perfil</Text>
 
-      <View style={styles.infoCard}>
-        <Text style={styles.label}>Nome</Text>
-        <Text style={styles.value}>{user?.name || "Usuário"}</Text>
+      {/* Mostra os dados que vieram do MongoDB via Redux */}
+      {user && (
+        <View style={styles.infoContainer}>
+          <Text style={styles.label}>Nome</Text>
+          <Text style={styles.value}>{user?.nome || "Usuário"}</Text>
 
-        <Text style={styles.label}>E-mail:</Text>
-        <Text style={styles.value}>{user?.email}</Text>
+          <Text style={styles.label}>E-mail:</Text>
+          <Text style={styles.value}>{user?.email}</Text>
 
-        <Text style={styles.label}>Nivel de Acesso:</Text>
-        <Text style={styles.value}>
-          {role === "admin"
-            ? "Administrador"
-            : role === "teacher"
-              ? "Professor"
-              : "Aluno"}
-        </Text>
-      </View>
-
+          <Text style={styles.label}>Nivel de Acesso:</Text>
+          <Text style={styles.value}>{user.role.toUpperCase()}</Text>
+        </View>
+      )}
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutText}>Sair da Conta</Text>
       </TouchableOpacity>
@@ -62,7 +59,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     textAlign: "center",
   },
-  infoCard: {
+  infoContainer: {
     backgroundColor: "#fff",
     padding: 20,
     borderRadius: 8,

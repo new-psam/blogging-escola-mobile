@@ -45,7 +45,7 @@ export function usePostDetail(postId: string | undefined) {
     try {
       const response = await api.post(`/posts/${postId}/comments`, {
         texto: newComment,
-        autor: user?.name || "Anônimo", // Usa o nome do usuário logado ou "Anônimo" se não tiver
+        autor: user?.nome || "Anônimo", // Usa o nome do usuário logado ou "Anônimo" se não tiver
       });
 
       // Adiciona o novo comentário à lista de comentários

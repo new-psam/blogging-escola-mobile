@@ -1,12 +1,9 @@
-import { auth, db } from "@/src/services/firebase";
-import { setRole, setUser } from "@/src/store/slices/authSlice";
+import { api } from "@/src/services/api";
 import { useRouter } from "expo-router";
-import { FirebaseError } from "firebase/app";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Keyboard,
   StyleSheet,
   Text,
@@ -15,78 +12,43 @@ import {
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { useDispatch } from "react-redux";
 
 export default function RegisterScreen() {
-  const [name, setName] = useState("");
+  const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const dispatch = useDispatch();
   const router = useRouter();
 
   const handleRegister = async () => {
-    // Limpa erros antigos ao tentar de novo
-    setErrorMessage("");
-
-    if (!name || !email || !password) {
-      setErrorMessage("Por favor, preencha todos os campos!");
-      return;
-    }
-
-    if (password.length < 6) {
-      setErrorMessage("A senha deve conter pelo menos 6 caracteres!");
+    if (!nome || !email || !password) {
+      Alert.alert("Erro", "Por favor, preencha todos os campos!");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // 1. Cria o usuário no Firease Auth
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password,
-      );
-      const user = userCredential.user;
-
-      // 2. Salva os dados extras no Firestore (com papel padrão de 'student')
-      const defaultRole = "student";
-      await setDoc(doc(db, "users", user.uid), {
-        name: name,
-        email: user.email,
-        role: defaultRole,
-        createdAt: new Date(),
+      // Bate na rota de registro do seu AuthController (Backend)
+      await api.post("/auth/register", {
+        nome: nome.trim(),
+        email: email.toLowerCase().trim(),
+        senha: password,
       });
-
-      // 3. Salva os dados no Redux
-      dispatch(setUser({ uid: user.uid, email: user.email, name: name }));
-      dispatch(setRole(defaultRole));
-
-      // 4. Redireciona para a área logada (Home)
-      router.replace("/(app)/(tabs)");
-    } catch (error: unknown) {
-      // Cole esta linha aqui para vermos o erro real no terminal do VS Code:
-      console.log("🔥 ERRO REAL NO CADASTRO:", error);
-      if (error instanceof FirebaseError) {
-        switch (error.code) {
-          case "auth/email-already-in-use":
-            setErrorMessage("Este e-mail já está em uso.");
-            break;
-          case "auth/invalid-email":
-            setErrorMessage("O formato de e-mail é inválido.");
-            break;
-          case "auth/weak-password":
-            setErrorMessage("A senha é muito fraca.");
-            break;
-          default:
-            setErrorMessage("Erro ao criar conta. Tente Novamente.");
-        }
+      Alert.alert(
+        "Sucesso",
+        "Conta criada com sucesso! Faça login para continuar.",
+      );
+      router.replace("/(auth)"); // Redireciona para a tela de login
+    } catch (error: any) {
+      console.error("Erro ao registrar:", error);
+      // se o email já existir no MongoDB, o Node geralmente avisa
+      if (error.response?.data?.error) {
+        Alert.alert("Erro", error.response.data.error);
       } else {
-        setErrorMessage("Ocorreu um erro inesperado. Tente Novamente.");
+        Alert.alert("Erro", "Não foi possível criar a conta!");
       }
     } finally {
       setIsLoading(false);
@@ -105,32 +67,32 @@ export default function RegisterScreen() {
         <TextInput
           style={styles.input}
           placeholder="Nome Completo"
-          value={name}
-          onChangeText={setName}
+          placeholderTextColor="#666"
+          value={nome}
+          onChangeText={setNome}
           editable={!isLoading}
         />
 
         <TextInput
           style={styles.input}
           placeholder="E-mail"
+          placeholderTextColor="#666"
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           editable={!isLoading}
           keyboardType="email-address"
         />
+
         <TextInput
           style={styles.input}
           placeholder="Senha"
+          placeholderTextColor="#666"
           value={password}
           onChangeText={setPassword}
           editable={!isLoading}
           secureTextEntry
         />
-
-        {errorMessage ? (
-          <Text style={styles.errorText}>{errorMessage}</Text>
-        ) : null}
 
         <TouchableOpacity
           style={[styles.button, isLoading && styles.buttonDisabled]}
@@ -166,7 +128,7 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: "#eee",
     padding: 15,
     borderRadius: 8,
     marginBottom: 15,

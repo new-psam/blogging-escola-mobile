@@ -1,57 +1,47 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-// 1. Define o formato dos dados de usuário e permissão
-interface AuthState {
-  user: {
-    uid: string;
-    email: string | null;
-    name?: string | null; // opcional, caso queira salvar o nome do usuário no futuro
-  } | null;
-  role: "admin" | "teacher" | "student" | null;
-  isLoading: boolean; //útil para mostrar um loading enquanto o app abre e verifica o firebase
+//1. O usuário é um espelho exato do seu MongoDB!
+interface User {
+  _id: string;
+  nome: string;
+  email: string;
+  role: string;
 }
 
-// 2. Estado inicial quando o app acaba de abrir
+// 2. Define o formato dos dados de usuário e permissão
+interface AuthState {
+  user: User | null;
+  token: string | null; // Se precisar guardar o token JWT do backend
+}
+
+// 3. Estado inicial quando o app acaba de abrir
 const initialState: AuthState = {
   user: null,
-  role: null,
-  isLoading: true,
+  token: null,
 };
 
-// 3. Cria a fatia (slice) de autenticação
+// 4. Cria a fatia (slice) de autenticação
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    // Ação para salvar os dados básicos do Firebase (ID e Email)
-    setUser: (
+    // Agora o login recebe o usuário e o Token assinadopelo Node.js
+    loginSuccess: (
       state,
       action: PayloadAction<{
-        uid: string;
-        email: string | null;
-        name?: string | null;
-      } | null>,
+        user: User;
+        token: string;
+      }>,
     ) => {
-      state.user = action.payload;
+      state.user = action.payload.user;
+      state.token = action.payload.token;
     },
-    // Ação para silvar apermissão que virá do Firestore (MOngoDB/Postgres no futuro)
-    setRole: (
-      state,
-      action: PayloadAction<"admin" | "teacher" | "student" | null>,
-    ) => {
-      state.role = action.payload;
-    },
-    // Ação para avisar que terminadmos de carregar informações
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.isLoading = action.payload;
-    },
-    // Ação para limpar tudo quando o usuário sair do app
-    logoutApp: (state) => {
+    logout: (state) => {
       state.user = null;
-      state.role = null;
+      state.token = null;
     },
   },
 });
 
-export const { setUser, setRole, setLoading, logoutApp } = authSlice.actions;
+export const { loginSuccess, logout } = authSlice.actions;
 export default authSlice.reducer;
