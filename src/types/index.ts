@@ -14,3 +14,11 @@ export interface Comment {
   texto: string;
   dataCriacao: string | Date;
 }
+
+export interface User {
+  _id: string;
+  nome: string;
+  email: string;
+  role: "admin" | "professor" | "aluno";
+  dataCriacao?: string;
+}

@@ -15,10 +15,9 @@ export default function PostCard({ post, onPress }: PostCardProps) {
       : post.conteudo;
 
   // Formata a data para o padrão brasileiro
-  const formatteDate =
-    post.dataCriacao instanceof Date
-      ? post.dataCriacao.toLocaleDateString("pt-BR")
-      : "Data recente";
+  const formatteDate = post.dataCriacao //instanceof Date
+    ? new Date(post.dataCriacao).toLocaleDateString("pt-BR")
+    : "Data recente";
 
   return (
     <TouchableOpacity onPress={onPress} style={styles.card} activeOpacity={0.7}>

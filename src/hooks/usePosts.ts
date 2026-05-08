@@ -1,6 +1,7 @@
 import { api } from "@/src/services/api";
 import { Post } from "@/src/types";
-import { useCallback, useEffect, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 
 export function usePosts() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -59,9 +60,13 @@ export function usePosts() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchPosts(1, "");
-  }, [fetchPosts]);
+  useFocusEffect(
+    useCallback(() => {
+      setPage(1);
+      setHasMorePosts(true);
+      fetchPosts(1, "");
+    }, [fetchPosts]),
+  );
 
   const handleSearch = () => {
     setIsSearching(true);

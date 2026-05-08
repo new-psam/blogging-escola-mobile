@@ -1,8 +1,5 @@
-import { useRouter } from "expo-router";
-
-import { api } from "@/src/services/api";
-import { loginSuccess } from "@/src/store/slices/authSlice";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -16,6 +13,12 @@ import {
   View,
 } from "react-native";
 import { useDispatch } from "react-redux";
+
+import { auth } from "@/src/config/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
+
+import { api } from "@/src/services/api";
+import { loginSuccess } from "@/src/store/slices/authSlice";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -34,17 +37,24 @@ export default function LoginScreen() {
     setIsLoading(true);
 
     try {
-      //1. Bate no seu AuthController.js do Node
-      const response = await api.post("/auth/login", {
-        email: email.toLowerCase().trim(),
-        senha: password,
-      });
+      //1. O Firebase (Segurança) verifica a senha e libera acesso
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email.toLocaleLowerCase().trim(),
+        password,
+      );
 
-      // 2. Extrai os dados que o seu Node.js retornou (usuário e token JWT)
-      const { user, token } = response.data;
-
-      // 3. Salva o Token fisicamente no celular ( para o Interceptador usar)
+      //2. pegamos o crachá (Token) que o Firebase gerou
+      const token = await userCredential.user.getIdToken();
       await AsyncStorage.setItem("@app_token", token);
+
+      // 🌟 A MARRETA DO TECH LEAD: Força a API a usar o token novo imediatamente!
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      // 3. Batemos no Node.js (RH) para pegar o perfil (Nome e Role) usando o token
+      const response = await api.get("/auth/me");
+
+      const user = response.data;
 
       // 4. Atualiza o estado global do Redux com os dados do usuário e token
       dispatch(loginSuccess({ user, token }));
@@ -53,7 +63,20 @@ export default function LoginScreen() {
       router.replace("/(app)/(tabs)");
     } catch (error: any) {
       console.error("Erro ao fazer login:", error);
-      Alert.alert("Erro", "E-mail ou senha inválidos. Tente novamente.");
+      //Tratamento de erros amigável do Firebase
+      if (
+        error.code === "auth/invalid-credential" ||
+        error.code === "auth/user-not-found"
+      ) {
+        Alert.alert("Erro", "E-mail ou senha incorretos");
+      } else if (error.response?.status === 404) {
+        Alert.alert(
+          "Erro",
+          "Usuário autenticado, mas perfil não encontrado no banco de dados.",
+        );
+      } else {
+        Alert.alert("Erro", "Falha ao fazer login. Tente novamente.");
+      }
     } finally {
       // Independetemente de dar certo ou errado, paramos o loading
       setIsLoading(false);

@@ -1,4 +1,3 @@
-import { api } from "@/src/services/api";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -13,6 +12,12 @@ import {
   View,
 } from "react-native";
 
+// Importações novas do Firebase
+import { auth } from "@/src/config/firebase";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+
+import { api } from "@/src/services/api";
+
 export default function RegisterScreen() {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -24,19 +29,31 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!nome || !email || !password) {
-      Alert.alert("Erro", "Por favor, preencha todos os campos!");
-      return;
+      return Alert.alert("Erro", "Por favor, preencha todos os campos!");
     }
 
     setIsLoading(true);
 
     try {
-      // Bate na rota de registro do seu AuthController (Backend)
+      // 1. Cria a conta no Firebase
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email.toLocaleLowerCase().trim(),
+        password,
+      );
+
+      // 2. (opcional) salva o nome no próprio firebase
+      await updateProfile(userCredential.user, { displayName: nome.trim() });
+
+      // 3.   Avisa o Node.js para salvar o perfil no MOngoDB
+      // Manda-se um UID do Firebase para o Node saber que é quem
       await api.post("/auth/register", {
         nome: nome.trim(),
-        email: email.toLowerCase().trim(),
-        senha: password,
+        email: email.toLocaleLowerCase().trim(),
+        role: "aluno", // Todo cadastro público cai como aluno por padrão
+        firebaseUid: userCredential.user.uid,
       });
+
       Alert.alert(
         "Sucesso",
         "Conta criada com sucesso! Faça login para continuar.",
@@ -44,9 +61,8 @@ export default function RegisterScreen() {
       router.replace("/(auth)"); // Redireciona para a tela de login
     } catch (error: any) {
       console.error("Erro ao registrar:", error);
-      // se o email já existir no MongoDB, o Node geralmente avisa
-      if (error.response?.data?.error) {
-        Alert.alert("Erro", error.response.data.error);
+      if (error.code === "auth/email-already-in-use") {
+        Alert.alert("Erro", "Este e-mail já esta cadastrado.");
       } else {
         Alert.alert("Erro", "Não foi possível criar a conta!");
       }
