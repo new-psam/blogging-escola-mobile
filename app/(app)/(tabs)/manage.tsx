@@ -4,15 +4,15 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Redirect, useFocusEffect, useRouter } from "expo-router";
 import React from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-export default function ManageScreen() {
+export default function ManageDashboardScreen() {
   const router = useRouter();
 
   // 1. puxa toda a "inteligência" do nosso hook
@@ -44,6 +44,17 @@ export default function ManageScreen() {
             ? "Todos os Posts (Admin)"
             : "Minhas Postagens"}
         </Text>
+
+        {/* botão admin */}
+        {user?.role === "admin" && (
+          <TouchableOpacity
+            style={styles.adminUserButton}
+            onPress={() => router.push("/(app)/users")}
+          >
+            <Ionicons name="people" size={20} color="#fff" />
+            <Text style={styles.adminUserButtonText}>Gerenciar Usuários</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {isLoading ? (
@@ -93,6 +104,24 @@ const styles = StyleSheet.create({
     borderBottomColor: "#EEE",
   },
   headerTitle: { fontSize: 24, fontWeight: "bold", color: "#333" },
+
+  adminUserButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#007bff",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    marginTop: 15,
+    alignSelf: "flex-start",
+  },
+  adminUserButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    marginLeft: 8,
+    fontSize: 14,
+  },
+
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   listContainer: { padding: 15, paddingBottom: 100 },
   emptyText: {
