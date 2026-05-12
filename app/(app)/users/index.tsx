@@ -1,5 +1,7 @@
 import UserCard from "@/src/components/UserCard";
 import { useManageUsers } from "@/src/hooks/useManageUsers";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { useRouter } from "expo-router";
 import React from "react";
 import {
     ActivityIndicator,
@@ -15,6 +17,7 @@ import { useSelector } from "react-redux";
 export default function ManageUsersScreen() {
   //Pegamos o usuário logadopara garantir que só o adminmexe aqui
   const currentUser = useSelector((state: any) => state.auth.user);
+  const router = useRouter();
 
   // Pegamos tudo pronto do nosso Hook!
   const {
@@ -39,6 +42,16 @@ export default function ManageUsersScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <Ionicons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Gestão de Equipes</Text>
+        <View style={{ width: 24 }} />
+      </View>
       {/* abas superiores */}
       <View style={styles.tabsContainer}>
         <TouchableOpacity
@@ -99,6 +112,24 @@ export default function ManageUsersScreen() {
 }
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: "#fff",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  backButton: {
+    padding: 5,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+  },
   container: { flex: 1, backgroundColor: "#f5f5f5" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   errorText: { fontSize: 18, color: "#d32f2f", fontWeight: "bold" },

@@ -2,6 +2,7 @@ import { api } from "@/src/services/api";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { Alert } from "react-native";
+import { useSelector } from "react-redux";
 
 // tipagem
 export interface User {
@@ -12,6 +13,8 @@ export interface User {
 }
 
 export function useManageUsers() {
+  const currentUser = useSelector((state: any) => state.auth.user);
+
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<"professor" | "aluno">("professor");
@@ -45,6 +48,14 @@ export function useManageUsers() {
   });
 
   const handleDelete = async (id: string, nome: string) => {
+    // 🌟 A TRAVA DE SEGURANÇA MÁXIMA AQUI:
+    if (id === currentUser?._id) {
+      return Alert.alert(
+        "Ação Bloqueada 🛑",
+        "Você não pode excluir a sua própria conta de Administrador. Peça para outro Admin fazer isso, se necessário.",
+      );
+    }
+
     Alert.alert(
       "Excluir Usuário",
       `Tem certeza que deseja excluir ${nome}? Essa ação não poderá ser desfeita.`,
