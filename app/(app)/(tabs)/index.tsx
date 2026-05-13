@@ -6,6 +6,7 @@ import React from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   StyleSheet,
   Text,
   TextInput,
@@ -31,8 +32,14 @@ export default function HomeScreen() {
     <View style={styles.container}>
       {/* Cabeçalho com barra de busca */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Feed Escolar</Text>
-
+        <View style={styles.titleRow}>
+          <Image
+            source={require("../../../assets/images/splash-icon.png")}
+            style={{ width: 40, height: 40 }}
+            resizeMode="contain"
+          />
+          <Text style={styles.headerTitle}>Feed Escolar</Text>
+        </View>
         <View style={styles.searchContainer}>
           <Ionicons
             name="search"
@@ -109,13 +116,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
   },
   header: {
-    padding: 20,
-    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 15,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#ddd",
     marginBottom: 8,
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 15,
+  },
+
   headerTitle: {
     fontSize: 24,
     fontWeight: "bold",

@@ -6,6 +6,7 @@ import React from "react";
 import {
     ActivityIndicator,
     FlatList,
+    Image,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -49,6 +50,14 @@ export default function ManageUsersScreen() {
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
+        <Image
+          source={require("../../../assets/images/splash-icon.png")}
+          style={{ width: 120, height: 40 }}
+          resizeMode="contain"
+        />
+
+        {/* Espaçador para equilibrar o botão de voltar e manter a logo no centro exato */}
+        <View style={{ width: 34 }} />
         <Text style={styles.headerTitle}>Gestão de Equipes</Text>
         <View style={{ width: 24 }} />
       </View>

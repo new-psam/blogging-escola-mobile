@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Keyboard,
   StyleSheet,
   Text,
@@ -90,6 +91,14 @@ export default function LoginScreen() {
       }}
     >
       <View style={styles.container}>
+        <View style={styles.logoContainer}>
+          <Image
+            // AJUSTE O CAMINHO RELATIVO SE NECESSÁRIO
+            source={require("../../assets/images/splash-icon.png")}
+            style={styles.logo}
+            resizeMode="contain" // 🌟 Mantém a proporção sem esticar
+          />
+        </View>
         <Text style={styles.title}>Blogging Escola</Text>
         <Text style={styles.subtitle}>Faça login para continuar</Text>
 
@@ -145,11 +154,23 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#f5f5f5",
   },
+  logoContainer: {
+    alignItems: "center", // Centraliza horizontalmente
+    marginBottom: 10, // Espaço entre a logo e o título
+  },
+  logo: {
+    width: 200, // Defina uma largura maior que o ícone do header
+    height: 150, // Ajuste a altura proporcionalmente
+    // Se sua imagem original tiver um fundo cinza e você quiser que ele suma,
+    // você pode tentar usar a propriedade tintColor, mas só funciona se o logo
+    // for monocromático. Como o seu tem cores (laranja, azul), o ideal é usar
+    // um PNG com fundo transparente.
+  },
   title: {
     fontSize: 28,
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 40,
+    marginBottom: 10,
     color: "#333",
   },
   subtitle: {
