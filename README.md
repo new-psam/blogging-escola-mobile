@@ -1,6 +1,3 @@
----
-
-```markdown
 # 📱 Blogging-Escola Mobile (FIVAM)
 
 **FIVAM - Conectar, Compartilhar, Ensinar, Aprender.**
