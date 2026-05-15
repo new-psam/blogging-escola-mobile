@@ -1,13 +1,18 @@
 import { api } from "@/src/services/api";
+import { getFirebaseErrorMessage } from "@/src/utils/firebaseErrors";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    Keyboard,
+    KeyboardAvoidingView,
+    Platform,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -41,11 +46,9 @@ export default function CreateUserScreen() {
       Alert.alert("Sucesso", `${role} criado com sucesso!`);
       router.back();
     } catch (error: any) {
-      console.error("Erro ao criar o usuário:", error);
-      Alert.alert(
-        "Erro!",
-        "Não foi possível criar o usuário. O email já pode estar em uso!",
-      );
+      //console.error("Erro ao criar o usuário:", error);
+      const mensagemAmigavel = getFirebaseErrorMessage(error.code);
+      Alert.alert("Erro", mensagemAmigavel);
     } finally {
       setIsLoading(false);
     }
@@ -53,64 +56,77 @@ export default function CreateUserScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>
-        Novo {role === "professor" ? "Professor" : "Aluno"}
-      </Text>
-
-      <View style={styles.form}>
-        <Text style={styles.label}>Nome Completo</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Ex: João da Silva"
-          placeholderTextColor="#666"
-          value={nome}
-          onChangeText={setNome}
-          editable={!isLoading}
-        />
-
-        <Text style={styles.label}>E-mail</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Ex: joao@escola.com"
-          placeholderTextColor="#666"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={email}
-          onChangeText={setEmail}
-          editable={!isLoading}
-        />
-
-        <Text style={styles.label}>Senha de Acesso</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Mínimo 6 caracteres"
-          placeholderTextColor="#666"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-          editable={!isLoading}
-        />
-
-        <TouchableOpacity
-          style={[styles.button, isLoading && styles.buttonDisabled]}
-          onPress={handleSave}
-          disabled={isLoading}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <TouchableWithoutFeedback
+          onPress={() => {
+            Keyboard.dismiss();
+          }}
         >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Salvar</Text>
-          )}
-        </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>
+              Novo {role === "professor" ? "Professor" : "Aluno"}
+            </Text>
 
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={() => router.back()}
-          disabled={isLoading}
-        >
-          <Text style={styles.cancelButtonText}>Cancelar</Text>
-        </TouchableOpacity>
-      </View>
+            <View style={styles.form}>
+              <Text style={styles.label}>Nome Completo</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ex: João da Silva"
+                placeholderTextColor="#666"
+                value={nome}
+                onChangeText={setNome}
+                editable={!isLoading}
+              />
+
+              <Text style={styles.label}>E-mail</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ex: joao@escola.com"
+                placeholderTextColor="#666"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+                editable={!isLoading}
+              />
+
+              <Text style={styles.label}>Senha de Acesso</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Mínimo 6 caracteres"
+                placeholderTextColor="#666"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+                editable={!isLoading}
+              />
+
+              <TouchableOpacity
+                style={[styles.button, isLoading && styles.buttonDisabled]}
+                onPress={handleSave}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Salvar</Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => router.back()}
+                disabled={isLoading}
+              >
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

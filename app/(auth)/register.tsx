@@ -5,6 +5,8 @@ import {
   Alert,
   Image,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -18,6 +20,8 @@ import { auth } from "@/src/config/firebase";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 
 import { api } from "@/src/services/api";
+import { getFirebaseErrorMessage } from "@/src/utils/firebaseErrors";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function RegisterScreen() {
   const [nome, setNome] = useState("");
@@ -61,81 +65,88 @@ export default function RegisterScreen() {
       );
       router.replace("/(auth)"); // Redireciona para a tela de login
     } catch (error: any) {
-      console.error("Erro ao registrar:", error);
-      if (error.code === "auth/email-already-in-use") {
-        Alert.alert("Erro", "Este e-mail já esta cadastrado.");
-      } else {
-        Alert.alert("Erro", "Não foi possível criar a conta!");
-      }
+      //console.error("Erro ao registrar - Firebase?:", error.code);
+      const mensagemAmigavel = getFirebaseErrorMessage(error.code);
+      Alert.alert("Erro", mensagemAmigavel);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <TouchableWithoutFeedback
-      onPress={() => {
-        Keyboard.dismiss();
-      }}
-    >
-      <View style={styles.container}>
-        <View style={styles.logoContainer}>
-          <Image
-            // AJUSTE O CAMINHO RELATIVO SE NECESSÁRIO
-            source={require("../../assets/images/splash-icon.png")}
-            style={styles.logo}
-            resizeMode="contain" // 🌟 Mantém a proporção sem esticar
-          />
-        </View>
-        <Text style={styles.title}>Criar Conta</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Nome Completo"
-          placeholderTextColor="#666"
-          value={nome}
-          onChangeText={setNome}
-          editable={!isLoading}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="E-mail"
-          placeholderTextColor="#666"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          editable={!isLoading}
-          keyboardType="email-address"
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Senha"
-          placeholderTextColor="#666"
-          value={password}
-          onChangeText={setPassword}
-          editable={!isLoading}
-          secureTextEntry
-        />
-
-        <TouchableOpacity
-          style={[styles.button, isLoading && styles.buttonDisabled]}
-          onPress={handleRegister}
-          disabled={isLoading}
+    <SafeAreaView style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <TouchableWithoutFeedback
+          onPress={() => {
+            Keyboard.dismiss();
+          }}
         >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Cadastrar</Text>
-          )}
-        </TouchableOpacity>
+          <View style={styles.container}>
+            <View style={styles.logoContainer}>
+              <Image
+                // AJUSTE O CAMINHO RELATIVO SE NECESSÁRIO
+                source={require("../../assets/images/splash-icon.png")}
+                style={styles.logo}
+                resizeMode="contain" // 🌟 Mantém a proporção sem esticar
+              />
+            </View>
+            <Text style={styles.title}>Criar Conta</Text>
 
-        <TouchableOpacity onPress={() => router.back()} disabled={isLoading}>
-          <Text style={styles.link}>Já tem conta? Faça login aqui</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableWithoutFeedback>
+            <TextInput
+              style={styles.input}
+              placeholder="Nome Completo"
+              placeholderTextColor="#666"
+              value={nome}
+              onChangeText={setNome}
+              editable={!isLoading}
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="E-mail"
+              placeholderTextColor="#666"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              editable={!isLoading}
+              keyboardType="email-address"
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Senha"
+              placeholderTextColor="#666"
+              value={password}
+              onChangeText={setPassword}
+              editable={!isLoading}
+              secureTextEntry
+            />
+
+            <TouchableOpacity
+              style={[styles.button, isLoading && styles.buttonDisabled]}
+              onPress={handleRegister}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Cadastrar</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => router.back()}
+              disabled={isLoading}
+            >
+              <Text style={styles.link}>Já tem conta? Faça login aqui</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 

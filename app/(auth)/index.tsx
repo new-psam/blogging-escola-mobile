@@ -1,11 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Image,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -20,6 +22,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 
 import { api } from "@/src/services/api";
 import { loginSuccess } from "@/src/store/slices/authSlice";
+import { getFirebaseErrorMessage } from "@/src/utils/firebaseErrors";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -28,6 +31,16 @@ export default function LoginScreen() {
 
   const router = useRouter();
   const dispatch = useDispatch();
+
+  // 🌟 O TRUQUE DE MESTRE: Limpa a tela sempre que ela ganha foco
+  useFocusEffect(
+    useCallback(() => {
+      // Quando a tela aparecer, resetamos os campos
+      setEmail("");
+      setPassword("");
+      setIsLoading(false); // Garante que o botão não fique travado
+    }, []),
+  );
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -63,21 +76,10 @@ export default function LoginScreen() {
       // 5. Redireciona para a tela principal do app
       router.replace("/(app)/(tabs)");
     } catch (error: any) {
-      console.error("Erro ao fazer login:", error);
-      //Tratamento de erros amigável do Firebase
-      if (
-        error.code === "auth/invalid-credential" ||
-        error.code === "auth/user-not-found"
-      ) {
-        Alert.alert("Erro", "E-mail ou senha incorretos");
-      } else if (error.response?.status === 404) {
-        Alert.alert(
-          "Erro",
-          "Usuário autenticado, mas perfil não encontrado no banco de dados.",
-        );
-      } else {
-        Alert.alert("Erro", "Falha ao fazer login. Tente novamente.");
-      }
+      //console.error("Erro ao fazer login - Firebase?:", error.code);
+
+      const mensagemAmigavel = getFirebaseErrorMessage(error.code);
+      Alert.alert("Erro!", mensagemAmigavel);
     } finally {
       // Independetemente de dar certo ou errado, paramos o loading
       setIsLoading(false);
@@ -85,65 +87,70 @@ export default function LoginScreen() {
   };
 
   return (
-    <TouchableWithoutFeedback
-      onPress={() => {
-        Keyboard.dismiss();
-      }}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={styles.container}>
-        <View style={styles.logoContainer}>
-          <Image
-            // AJUSTE O CAMINHO RELATIVO SE NECESSÁRIO
-            source={require("../../assets/images/splash-icon.png")}
-            style={styles.logo}
-            resizeMode="contain" // 🌟 Mantém a proporção sem esticar
+      <TouchableWithoutFeedback
+        onPress={() => {
+          Keyboard.dismiss();
+        }}
+      >
+        <View style={styles.container}>
+          <View style={styles.logoContainer}>
+            <Image
+              // AJUSTE O CAMINHO RELATIVO SE NECESSÁRIO
+              source={require("../../assets/images/splash-icon.png")}
+              style={styles.logo}
+              resizeMode="contain" // 🌟 Mantém a proporção sem esticar
+            />
+          </View>
+          <Text style={styles.title}>Blogging Escola</Text>
+          <Text style={styles.subtitle}>Faça login para continuar</Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="E-mail"
+            placeholderTextColor="#666"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            editable={!isLoading}
           />
+
+          <TextInput
+            style={styles.input}
+            placeholder="Senha"
+            placeholderTextColor="#666"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            editable={!isLoading}
+          />
+
+          <TouchableOpacity
+            style={[styles.button, isLoading && styles.buttonDisabled]}
+            onPress={handleLogin}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Entrar</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.linkButton}
+            onPress={() => router.push("./(auth)/register")}
+            disabled={isLoading}
+          >
+            <Text style={styles.linkText}>Não tem conta? Cadastre-se aqui</Text>
+          </TouchableOpacity>
         </View>
-        <Text style={styles.title}>Blogging Escola</Text>
-        <Text style={styles.subtitle}>Faça login para continuar</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="E-mail"
-          placeholderTextColor="#666"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          editable={!isLoading}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Senha"
-          placeholderTextColor="#666"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          editable={!isLoading}
-        />
-
-        <TouchableOpacity
-          style={[styles.button, isLoading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Entrar</Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.linkButton}
-          onPress={() => router.push("./(auth)/register")}
-          disabled={isLoading}
-        >
-          <Text style={styles.linkText}>Não tem conta? Cadastre-se aqui</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableWithoutFeedback>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
